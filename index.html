@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Central de Escuta  Dashboard</title>
+<title>Central de Escuta Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&family=Barlow+Condensed:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -454,7 +454,7 @@
 
 <header>
   <div class="logo-area">
-    <img src="assets/logovegas.png" alt="Vegas Vigilância" class="logo-img">
+    <img src="assets/loogovegas.png" alt="Vegas Vigilância" class="logo-img">
     <div class="logo-text">
       <h1>Central de Escuta</h1>
       <p>Vegas Vigilância & Segurança</p>
@@ -589,8 +589,15 @@ async function loadData() {
     const text = await res.text();
     const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
 
-    const cols = json.table.cols.map(c => c.label.toLowerCase().trim());
-    const rows = json.table.rows || [];
+    let cols = json.table.cols.map(c => c.label.toLowerCase().trim());
+    let rows = json.table.rows || [];
+
+    // Se labels vazios, primeira linha é o cabeçalho
+    if (cols.every(c => c === '')) {
+      const headerRow = rows[0];
+      cols = headerRow.c.map(cell => (cell && cell.v ? String(cell.v).toLowerCase().trim() : ''));
+      rows = rows.slice(1);
+    }
 
     const getCell = (cell) => {
       if (!cell) return '';
@@ -606,10 +613,10 @@ async function loadData() {
 
     allData = rows.map(r => {
       const obj = {};
-      cols.forEach((col, i) => { obj[col.trim().toLowerCase()] = getCell(r.c[i]); });
+      cols.forEach((col, i) => { obj[col] = getCell(r.c[i]); });
       return {
         data_hora: obj['data_hora'] || obj['data/hora'] || obj['datahora'] || '',
-        pergunta:  obj['pergunta'] || '',
+        pergunta:  obj['pergunta'] || obj['pergunta '] || '',
         resposta:  obj['resposta'] || '',
       };
     }).filter(r => r.pergunta || r.resposta);
