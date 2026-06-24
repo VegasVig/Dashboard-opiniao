@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Escuta — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&family=Barlow+Condensed:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050816;
+    --bg2: #0a0f24;
+    --bg3: #0d1530;
+    --cyan: #00d4ff;
+    --green: #00ffb2;
+    --purple: #7c3aed;
+    --border: rgba(0, 212, 255, 0.15);
+    --border2: rgba(0, 212, 255, 0.3);
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --danger: #ff4d6d;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-area { display: flex; align-items: center; gap: 16px; }
+
+  .logo-badge {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--cyan), var(--purple));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+
+  .logo-text h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .logo-text p {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .header-right { display: flex; align-items: center; gap: 16px; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .status-label { font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+
+  #last-update { font-size: 11px; color: var(--muted); }
+
+  .refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--cyan);
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .refresh-btn:hover { background: rgba(0,212,255,0.1); }
+
+  main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .kpi-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cyan), transparent);
+  }
+
+  .kpi-card:hover { border-color: var(--border2); }
+
+  .kpi-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .kpi-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--cyan);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .kpi-sub { font-size: 12px; color: var(--muted); }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--cyan);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .chart-wrap { position: relative; width: 100%; height: 220px; }
+
+  #wordCloud {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .word-tag {
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    color: var(--cyan);
+    cursor: default;
+    transition: all 0.2s;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  .word-tag:hover { background: rgba(0,212,255,0.18); }
+
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+
+  .table-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    padding: 7px 14px;
+    width: 280px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box:focus { border-color: var(--cyan); }
+  .search-box::placeholder { color: var(--muted); }
+
+  .filter-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    padding: 7px 14px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .count-label { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead th {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  thead th:hover { color: var(--cyan); }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover { background: rgba(0,212,255,0.04); }
+
+  tbody td {
+    padding: 12px 16px;
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .td-date {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 130px;
+  }
+
+  .td-pergunta { color: var(--text); max-width: 340px; }
+  .td-resposta { color: #94a3b8; max-width: 420px; font-size: 13px; }
+
+  .truncate {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--cyan);
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 0;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 1px;
+  }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5,8,22,0.92);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 28px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .modal-date {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .modal-close:hover { color: var(--cyan); }
+
+  .modal-section-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .modal-text {
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+    margin-bottom: 20px;
+  }
+
+  .modal-resposta { color: #94a3b8; }
+
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+  }
+
+  .empty-state p { font-size: 13px; letter-spacing: 1px; margin-top: 8px; }
+
+  .loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+  }
+
+  .spinner {
+    width: 32px; height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-bar {
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    border-radius: 8px;
+    padding: 14px 20px;
+    color: var(--danger);
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: none;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 1px;
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+  }
+
+  @media (max-width: 768px) {
+    main { padding: 16px; }
+    .charts-row { grid-template-columns: 1fr; }
+    header { padding: 12px 16px; }
+    .search-box { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-badge"><img src="./assets/logovegas.png" alt="Logo"></div>
+    <div class="logo-text">
+      <h1>Central de Escuta</h1>
+      <p>Vegas Vigilância & Segurança</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot"></div>
+    <span class="status-label">ONLINE</span>
+    <span id="last-update">—</span>
+    <button class="refresh-btn" onclick="loadData()">↻ Atualizar</button>
+  </div>
+</header>
+
+<main>
+  <div id="errorBar" class="error-bar"></div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Total de Conversas</div>
+      <div class="kpi-value" id="kpiTotal">—</div>
+      <div class="kpi-sub">registros no banco</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Hoje</div>
+      <div class="kpi-value" id="kpiHoje">—</div>
+      <div class="kpi-sub">conversas nas últimas 24h</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Média por Dia</div>
+      <div class="kpi-value" id="kpiMedia">—</div>
+      <div class="kpi-sub">nos últimos 30 dias</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Pico de Atividade</div>
+      <div class="kpi-value" id="kpiPico" style="font-size:18px; padding-top:4px;">—</div>
+      <div class="kpi-sub">dia com mais registros</div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="card-title">Volume por dia</div>
+      <div class="chart-wrap">
+        <canvas id="chartVolume" role="img" aria-label="Gráfico de volume de conversas por dia"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="card-title">Distribuição por hora</div>
+      <div class="chart-wrap">
+        <canvas id="chartHora" role="img" aria-label="Gráfico de distribuição por hora do dia"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom: 28px;">
+    <div class="card-title">Temas mais frequentes</div>
+    <div id="wordCloud">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="card-title">Registro de conversas</div>
+    <div class="table-controls">
+      <input class="search-box" type="text" id="searchInput" placeholder="Buscar em perguntas e respostas..." oninput="filterTable()">
+      <select class="filter-select" id="filterDias" onchange="filterTable()">
+        <option value="0">Todos os períodos</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+        <option value="90">Últimos 90 dias</option>
+      </select>
+      <span class="count-label" id="countLabel">—</span>
+    </div>
+    <div class="table-wrap">
+      <div id="tableLoading" class="loading">
+        <div class="spinner"></div>
+        <p>Carregando dados...</p>
+      </div>
+      <table id="mainTable" style="display:none">
+        <thead>
+          <tr>
+            <th onclick="sortTable('data')">Data/Hora ↕</th>
+            <th>Pergunta</th>
+            <th>Resposta</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="empty-state" style="display:none">
+        <p>NENHUM REGISTRO ENCONTRADO</p>
+        <p>Tente ajustar os filtros de busca</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-date" id="modalDate"></span>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-section-label">Pergunta do funcionário</div>
+    <div class="modal-text" id="modalPergunta"></div>
+    <div class="divider"></div>
+    <div class="modal-section-label">Resposta do assistente</div>
+    <div class="modal-text modal-resposta" id="modalResposta"></div>
+  </div>
+</div>
+
+<footer>VEGAS VIGILÂNCIA & SEGURANÇA — CENTRAL DE ESCUTA — ACESSO RESTRITO À DIRETORIA</footer>
+
+<script>
+const SHEET_ID = '1YeCGf_iQjIB0YUEzTfak6UiLSZwAEkHDi00fru0i8BE';
+const SHEET_NAME = 'opiniao';
+const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+let allData = [];
+let chartVol = null, chartHor = null;
+let sortDir = -1;
+
+const STOPWORDS = new Set(['que','com','para','uma','não','por','mais','como','mas','foi','são','isso','sobre','ele','ela','você','também','quando','tudo','muito','pode','bem','vou','aqui','seus','seu','sua','das','dos','tem','ter','isso','essa','este','esta','nos','nas','num','nós','há','ao','da','do','de','em','se','me','na','no','as','os','e','a','o','é','um','ou','já','só','até','essa','esse','faz','fazer','vai','vem','ser','suas','meu','minha','assim','pelo','pela','isso','aqui','todo','toda','ainda','então','mas','mas','nao','vc','pra','ta','né','sim','nao','bom','dia','boa','tarde','oi','olá','obrigado','obrigada']);
+
+async function loadData() {
+  try {
+    document.getElementById('tableLoading').style.display = 'block';
+    document.getElementById('mainTable').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('errorBar').style.display = 'none';
+
+    const res = await fetch(URL + '&t=' + Date.now());
+    const text = await res.text();
+    const json = JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*?)\);/)[1]);
+
+    const cols = json.table.cols.map(c => c.label.toLowerCase().trim());
+    const rows = json.table.rows || [];
+
+    allData = rows.map(r => {
+      const obj = {};
+      cols.forEach((col, i) => {
+        obj[col] = r.c[i] ? (r.c[i].f || r.c[i].v || '') : '';
+      });
+      return obj;
+    }).filter(r => r.pergunta || r.resposta);
+
+    document.getElementById('last-update').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+
+    buildKPIs();
+    buildCharts();
+    buildWordCloud();
+    filterTable();
+
+    document.getElementById('tableLoading').style.display = 'none';
+    document.getElementById('mainTable').style.display = 'table';
+
+  } catch(e) {
+    document.getElementById('tableLoading').style.display = 'none';
+    const err = document.getElementById('errorBar');
+    err.style.display = 'block';
+    err.textContent = '⚠ Erro ao carregar dados. Verifique se a planilha está pública (Compartilhar → Qualquer pessoa com o link) e tente novamente.';
+    console.error(e);
+  }
+}
+
+function parseDate(str) {
+  if (!str) return null;
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
+}
+
+function buildKPIs() {
+  const total = allData.length;
+  document.getElementById('kpiTotal').textContent = total;
+
+  const now = new Date();
+  const hoje = allData.filter(r => {
+    const d = parseDate(r.data_hora || r['data/hora'] || r.datahora);
+    if (!d) return false;
+    return (now - d) < 86400000;
+  }).length;
+  document.getElementById('kpiHoje').textContent = hoje;
+
+  const dias = {};
+  allData.forEach(r => {
+    const d = parseDate(r.data_hora || r['data/hora'] || r.datahora);
+    if (!d) return;
+    const key = d.toLocaleDateString('pt-BR');
+    dias[key] = (dias[key] || 0) + 1;
+  });
+
+  const diasKeys = Object.keys(dias);
+  const media = diasKeys.length ? Math.round(total / diasKeys.length) : 0;
+  document.getElementById('kpiMedia').textContent = media;
+
+  if (diasKeys.length) {
+    const pico = diasKeys.reduce((a, b) => dias[a] > dias[b] ? a : b);
+    document.getElementById('kpiPico').textContent = pico;
+  }
+}
+
+function buildCharts() {
+  const volMap = {};
+  const horaMap = {};
+
+  allData.forEach(r => {
+    const d = parseDate(r.data_hora || r['data/hora'] || r.datahora);
+    if (!d) return;
+    const dia = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    volMap[dia] = (volMap[dia] || 0) + 1;
+    const h = d.getHours();
+    horaMap[h] = (horaMap[h] || 0) + 1;
+  });
+
+  const sortedDias = Object.keys(volMap).sort((a,b) => {
+    const [da,ma] = a.split('/').map(Number);
+    const [db,mb] = b.split('/').map(Number);
+    return new Date(2024,ma-1,da) - new Date(2024,mb-1,db);
+  });
+
+  const last14 = sortedDias.slice(-14);
+
+  if (chartVol) chartVol.destroy();
+  chartVol = new Chart(document.getElementById('chartVolume'), {
+    type: 'bar',
+    data: {
+      labels: last14,
+      datasets: [{
+        label: 'Conversas',
+        data: last14.map(d => volMap[d]),
+        backgroundColor: 'rgba(0,212,255,0.25)',
+        borderColor: '#00d4ff',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 }, autoSkip: false, maxRotation: 45 }, grid: { color: 'rgba(0,212,255,0.05)' } },
+        y: { ticks: { color: '#64748b', font: { size: 11 }, stepSize: 1 }, grid: { color: 'rgba(0,212,255,0.07)' }, beginAtZero: true }
+      }
+    }
+  });
+
+  const horas = Array.from({length: 24}, (_, i) => i);
+  if (chartHor) chartHor.destroy();
+  chartHor = new Chart(document.getElementById('chartHora'), {
+    type: 'line',
+    data: {
+      labels: horas.map(h => h + 'h'),
+      datasets: [{
+        label: 'Conversas',
+        data: horas.map(h => horaMap[h] || 0),
+        borderColor: '#00ffb2',
+        backgroundColor: 'rgba(0,255,178,0.08)',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#00ffb2',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#64748b', font: { size: 11 } }, grid: { color: 'rgba(0,212,255,0.05)' } },
+        y: { ticks: { color: '#64748b', font: { size: 11 }, stepSize: 1 }, grid: { color: 'rgba(0,212,255,0.07)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function buildWordCloud() {
+  const freq = {};
+  allData.forEach(r => {
+    const texto = (r.pergunta || '') + ' ' + (r.resposta || '');
+    texto.toLowerCase()
+      .replace(/[^a-záéíóúàãõâêôç\s]/g, ' ')
+      .split(/\s+/)
+      .forEach(w => {
+        if (w.length > 3 && !STOPWORDS.has(w)) {
+          freq[w] = (freq[w] || 0) + 1;
+        }
+      });
+  });
+
+  const sorted = Object.entries(freq).sort((a,b) => b[1]-a[1]).slice(0, 30);
+  const max = sorted[0]?.[1] || 1;
+
+  const cloud = document.getElementById('wordCloud');
+  cloud.innerHTML = '';
+
+  if (!sorted.length) {
+    cloud.innerHTML = '<div class="loading"><p>Sem dados suficientes</p></div>';
+    return;
+  }
+
+  sorted.forEach(([word, count]) => {
+    const pct = count / max;
+    const size = Math.round(11 + pct * 14);
+    const opacity = 0.5 + pct * 0.5;
+    const tag = document.createElement('span');
+    tag.className = 'word-tag';
+    tag.textContent = word;
+    tag.style.fontSize = size + 'px';
+    tag.style.opacity = opacity;
+    tag.title = count + ' ocorrência' + (count > 1 ? 's' : '');
+    cloud.appendChild(tag);
+  });
+}
+
+function getDateKey(r) {
+  return parseDate(r.data_hora || r['data/hora'] || r.datahora);
+}
+
+function filterTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const dias = parseInt(document.getElementById('filterDias').value);
+  const now = new Date();
+
+  const filtered = allData.filter(r => {
+    const matchQ = !q || (r.pergunta||'').toLowerCase().includes(q) || (r.resposta||'').toLowerCase().includes(q);
+    let matchD = true;
+    if (dias > 0) {
+      const d = getDateKey(r);
+      matchD = d && (now - d) <= dias * 86400000;
+    }
+    return matchQ && matchD;
+  });
+
+  renderTable(filtered);
+  document.getElementById('countLabel').textContent = filtered.length + ' registro' + (filtered.length !== 1 ? 's' : '');
+}
+
+function sortTable(col) {
+  sortDir *= -1;
+  allData.sort((a, b) => {
+    const da = getDateKey(a) || 0;
+    const db = getDateKey(b) || 0;
+    return (da - db) * sortDir;
+  });
+  filterTable();
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  const table = document.getElementById('mainTable');
+
+  if (!data.length) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  table.style.display = 'table';
+  empty.style.display = 'none';
+
+  tbody.innerHTML = data.map((r, i) => {
+    const d = getDateKey(r);
+    const dateStr = d ? d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+    const perg = (r.pergunta || '').replace(/</g, '&lt;');
+    const resp = (r.resposta || '').replace(/</g, '&lt;');
+    return `<tr onclick="openModal(${allData.indexOf(r)})">
+      <td class="td-date">${dateStr}</td>
+      <td class="td-pergunta"><div class="truncate">${perg}</div></td>
+      <td class="td-resposta"><div class="truncate">${resp}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openModal(idx) {
+  const r = allData[idx];
+  if (!r) return;
+  const d = getDateKey(r);
+  document.getElementById('modalDate').textContent = d ? d.toLocaleString('pt-BR', { dateStyle:'full', timeStyle:'short' }) : '';
+  document.getElementById('modalPergunta').textContent = r.pergunta || '—';
+  document.getElementById('modalResposta').textContent = r.resposta || '—';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal')) {
+    document.getElementById('modal').classList.remove('open');
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modal').classList.remove('open');
+});
+
+loadData();
+setInterval(loadData, 120000);
+</script>
+</body>
+</html>
