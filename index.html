@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Central de Escuta — Dashboard</title>
+<title>Central de Escuta  Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&family=Barlow+Condensed:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -454,7 +454,7 @@
 
 <header>
   <div class="logo-area">
-    <img src="assets/logovegas.png" alt="Vegas Vigilância" class="logo-img">
+    <img src="assets/loogovegas.png" alt="Vegas Vigilância" class="logo-img">
     <div class="logo-text">
       <h1>Central de Escuta</h1>
       <p>Vegas Vigilância & Segurança</p>
@@ -592,23 +592,29 @@ async function loadData() {
     const cols = json.table.cols.map(c => c.label.toLowerCase().trim());
     const rows = json.table.rows || [];
 
+    const getCell = (cell) => {
+      if (!cell) return '';
+      if (cell.v !== null && cell.v !== undefined) {
+        if (typeof cell.v === 'string' && cell.v.startsWith('Date(')) {
+          const p = cell.v.replace('Date(','').replace(')','').split(',').map(Number);
+          return new Date(p[0], p[1], p[2], p[3]||0, p[4]||0, p[5]||0);
+        }
+        return cell.f || cell.v;
+      }
+      return '';
+    };
+
     allData = rows.map(r => {
       const obj = {};
-      cols.forEach((col, i) => {
-        obj[col] = r.c[i] ? (r.c[i].f || r.c[i].v || '') : '';
-      });
-      // Normaliza nomes de colunas
-      const normalized = {};
-      Object.keys(obj).forEach(k => {
-        const kn = k.replace(/[^a-z0-9]/gi, '').toLowerCase();
-        normalized[kn] = obj[k];
-      });
+      cols.forEach((col, i) => { obj[col.trim().toLowerCase()] = getCell(r.c[i]); });
       return {
-        data_hora: obj['data_hora'] || obj['data/hora'] || obj['datahora'] || normalized['datahora'] || '',
-        pergunta:  obj['pergunta']  || normalized['pergunta']  || '',
-        resposta:  obj['resposta']  || normalized['resposta']  || '',
+        data_hora: obj['data_hora'] || obj['data/hora'] || obj['datahora'] || '',
+        pergunta:  obj['pergunta'] || '',
+        resposta:  obj['resposta'] || '',
       };
     }).filter(r => r.pergunta || r.resposta);
+
+    console.log('[Dashboard] Linhas carregadas:', allData.length, '| Primeira:', JSON.stringify({data_hora: String(allData[0]?.data_hora), pergunta: allData[0]?.pergunta?.slice(0,30)}));
 
     document.getElementById('last-update').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
 
