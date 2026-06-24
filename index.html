@@ -46,16 +46,11 @@
 
   .logo-area { display: flex; align-items: center; gap: 16px; }
 
-  .logo-badge {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, var(--cyan), var(--purple));
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: 1px;
+  .logo-img {
+    height: 40px;
+    width: auto;
+    max-width: 120px;
+    object-fit: contain;
   }
 
   .logo-text h1 {
@@ -459,7 +454,7 @@
 
 <header>
   <div class="logo-area">
-    <div class="logo-badge"><img src="./assets/logovegas.png" alt="Logo"></div>
+    <img src="assets/logovegas.png" alt="Vegas Vigilância" class="logo-img">
     <div class="logo-text">
       <h1>Central de Escuta</h1>
       <p>Vegas Vigilância & Segurança</p>
@@ -602,7 +597,17 @@ async function loadData() {
       cols.forEach((col, i) => {
         obj[col] = r.c[i] ? (r.c[i].f || r.c[i].v || '') : '';
       });
-      return obj;
+      // Normaliza nomes de colunas
+      const normalized = {};
+      Object.keys(obj).forEach(k => {
+        const kn = k.replace(/[^a-z0-9]/gi, '').toLowerCase();
+        normalized[kn] = obj[k];
+      });
+      return {
+        data_hora: obj['data_hora'] || obj['data/hora'] || obj['datahora'] || normalized['datahora'] || '',
+        pergunta:  obj['pergunta']  || normalized['pergunta']  || '',
+        resposta:  obj['resposta']  || normalized['resposta']  || '',
+      };
     }).filter(r => r.pergunta || r.resposta);
 
     document.getElementById('last-update').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
@@ -626,8 +631,16 @@ async function loadData() {
 
 function parseDate(str) {
   if (!str) return null;
-  const d = new Date(str);
-  return isNaN(d) ? null : d;
+  // Formato ISO direto: 2026-06-24T13:45:50.448-03:00
+  if (typeof str === 'string') {
+    const d = new Date(str);
+    if (!isNaN(d)) return d;
+    // Tenta formato pt-BR: 24/06/2026 13:45
+    const ptbr = str.match(/(\d{2})\/(\d{2})\/(\d{4})[T\s](\d{2}):(\d{2})/);
+    if (ptbr) return new Date(`${ptbr[3]}-${ptbr[2]}-${ptbr[1]}T${ptbr[4]}:${ptbr[5]}:00`);
+  }
+  if (typeof str === 'number') return new Date(str);
+  return null;
 }
 
 function buildKPIs() {
@@ -776,7 +789,7 @@ function buildWordCloud() {
 }
 
 function getDateKey(r) {
-  return parseDate(r.data_hora || r['data/hora'] || r.datahora);
+  return parseDate(r.data_hora);
 }
 
 function filterTable() {
